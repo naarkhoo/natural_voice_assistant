@@ -1,0 +1,51 @@
+# Use an official Python 3.10.12 runtime as a parent image
+FROM python:3.10.12-slim
+
+# Set the working directory in the container
+WORKDIR /usr/src/app
+
+# Install system dependencies, add non-free Debian repository for mbrola
+RUN apt-get update && \
+    apt-get install -y \
+    festival \
+    git \
+    nano \
+    gcc \
+    less \
+    curl \
+    portaudio19-dev \
+    libportaudio2 \
+    ca-certificates \
+    locales \
+    tini \
+    libglib2.0-0 \
+    libsm6 \
+    libxrender1 \
+    libxext-dev
+
+RUN apt-get clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+ && locale-gen
+
+# Install Poetry
+ENV POETRY_VERSION=1.6.1
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+# Ensure Poetry and Python binaries are in PATH
+ENV PATH="${PATH}:/root/.local/bin"
+
+# Set the timeout to 1600
+ENV POETRY_HTTP_TIMEOUT=1600
+
+# Copy the pyproject.toml and optionally poetry.lock file
+COPY pyproject.toml poetry.lock* /usr/src/app/
+
+# Install project dependencies
+#RUN poetry config virtualenvs.create false \
+#    && poetry install --no-interaction --no-ansi
+
+# Continue with the rest of your Dockerfile, e.g. copying your source code
+COPY . /usr/src/app
+
+ENTRYPOINT ["tini", "-g", "--"]
